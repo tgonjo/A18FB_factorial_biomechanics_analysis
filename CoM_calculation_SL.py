@@ -192,7 +192,7 @@ with st.form(key='upload_form'):
         df_raw = pd.read_excel(uploaded_file)
         fig,ax = plt.subplots()
         ax.plot(df_raw['Time']-df_raw['Time'].iloc[0], df_raw['HipY'])
-        ax.set_title('This is your Hip(Y) time-series plot. Does the time and displacement values look like seconds and metres?')
+        ax.set_title('This is your Hip(Y) time-series plot. Do the time and displacement values look like seconds and metres?')
         ax.set_xlabel('Time')
         ax.set_ylabel('Vertical Displacement')
         st.pyplot(fig)
