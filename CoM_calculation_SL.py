@@ -389,7 +389,7 @@ if submit2:
         "outdat_with_com_nf.xlsx",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    st.text('If not, check and fix your Excel file, reload this pafe, and run the analysis again')
+    st.text('If not, check and fix your Excel file, reload this page, and run the analysis again')
     
     progress_placeholder.empty()
         
