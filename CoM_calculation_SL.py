@@ -25,7 +25,7 @@ def fill_data_gaps(data, max_consecutive_gaps=3):
                 if consecutive_gaps.max() > max_consecutive_gaps:
                     # Create a simple Tkinter GUI to display the error message
                     st.error(f"Gap check 1: Error! More than {max_consecutive_gaps} consecutive gaps detected in column {column}. Unable to fill. Please go back to Kinovea/Tracker and track the missing points for {column}")
-                    st.subheader("Ignore any error messages appear below. Refresh this page and try again once you fix the issue described in 'Gap check 1'.")                          
+                    st.subheader("Ignore any error messages below. Refresh this page and try again once you have fixed the issue described in 'Gap check 1' above.")                          
                     st.stop()
                 # Apply linear interpolation to fill gaps up to three rows in sequence
                 data[column] = data[column].interpolate(method='linear', limit_area='inside')
@@ -38,7 +38,7 @@ def check_and_continue():
         
         st.error('Gap check 2: Error! There are some blank cells in the first or last row of your Excel data')
     
-        st.subheader("Ignore any error messages appear below. Refresh this page and try again once you fix the issue described in 'Gap check 2'.")                           
+        st.subheader("Ignore any error messages below. Refresh this page and try again once you have fixed the issue described in 'Gap check 2' above.")                           
         st.stop()
     else:
         st.success('Gap check 2: Success! No blank cells in the first and last data rows')
