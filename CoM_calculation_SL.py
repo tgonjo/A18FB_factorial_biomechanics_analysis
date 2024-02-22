@@ -361,7 +361,6 @@ if submit2:
         axs[num].plot(X.iloc[i],Y.iloc[i])
         axs[num].set_xlim(left=xmin, right=xmax)
         axs[num].set_ylim(bottom=ymin, top=ymax)
-        axs[num].set_ylabel('Y Displacement (m)')
         axs[num].set_title(f'Frame {i}')
         axs[num].set_xticks([])
         
@@ -372,6 +371,9 @@ if submit2:
         
         if i>0:
             axs[num].set_yticks([])
+
+        if i ==0
+            axs[num].set_ylabel('Y Displacement (m)')
         
     st.pyplot(fig2)
     st.text('Stick figures of the processed jump movement (the red dots show the location of CoM)')
