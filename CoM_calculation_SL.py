@@ -154,7 +154,7 @@ st.download_button(
     "Coordinates_template.xlsx",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 )
-st.text('IMPORTANT!!: Do not change the header of each column (e.g. Shoulder X, HipY, etc.) - the app will not work if you change them')
+st.text('IMPORTANT!!: Do not change the header of each column (e.g. ShoulderX, HipY, etc.) - the app will not work if you change them')
 st.text('')
 
 st.subheader("Input participant's information and upload your Excel file")
