@@ -372,7 +372,7 @@ if submit2:
         if i>0:
             axs[num].set_yticks([])
 
-        if i ==0
+        if i ==0:
             axs[num].set_ylabel('Y Displacement (m)')
         
     st.pyplot(fig2)
