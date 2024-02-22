@@ -361,7 +361,9 @@ if submit2:
         axs[num].plot(X.iloc[i],Y.iloc[i])
         axs[num].set_xlim(left=xmin, right=xmax)
         axs[num].set_ylim(bottom=ymin, top=ymax)
+        axs[num].set_ylabel('Y Displacement (m)')
         axs[num].set_title(f'Frame {i}')
+        axs[num].set_xticks([])
         
         CM_x = df['CoM_X'].iloc[i] 
         CM_y = df['CoM_Y'].iloc[i] 
