@@ -132,10 +132,10 @@ st.text('3. It exports the output data (smoothed coordinates, CoM coordinates, a
 
 st.text('')
 st.subheader('Before you start, make sure you have:')
-st.text('1. digitised all six joints and exported the coordinate data.')
-st.text('2. converted the unit if necessary (e.g. milli-second to second, cm to m, etc.')
-st.text('3. checked there are no blank cells at the first and last rows.')
-st.text('4. checked there are no more than 3 consecutive blank cells at each column.')
+st.text('1. digitised all six joints and exported the coordinate data;')
+st.text('2. converted the unit if necessary (e.g. milli-second to second, cm to m, etc.);')
+st.text('3. checked there are no blank cells in the first and last rows;')
+st.text('4. checked there are no more than 3 consecutive blank cells in each column;')
 st.text('5. pasted your time and coordinate data onto the template Excel file and saved it.')
 
 deleva_url = "https://www.sciencedirect.com/science/article/pii/0021929095001786?via%3Dihub"
