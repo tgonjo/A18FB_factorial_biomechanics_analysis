@@ -123,7 +123,7 @@ def residual_analysis(data_column,time_column):
 image = Image.open('test_image.png')
 st.image(image,width=800)
 st.title('CoM & Net Force calculator for A18FB Assessment 1')
-st.caption('This web app was designed to calculate the 2D centre of mass (CoM) location and net force based on 2D coordinates of six joints.')
+st.caption('This web app was designed to calculate the 2D centre of mass (CoM) location and net force based on 2D coordinates of six joints (Ankle, Knee, Hip, Shoulder, Elbow, and Wrist).')
 
 st.subheader('What does this web app do?')
 st.text('1. It smoothes your data to minimise the noise in your joint coordinates.')
