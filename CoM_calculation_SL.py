@@ -149,7 +149,7 @@ temp_df.to_excel(buf := BytesIO(), index=False)
 
 st.text('')
 st.download_button(
-    "Download the template Excel file here  \n' IMPORTANT!!: Do not change the header of each column (e.g. ShoulderX, HipY, etc.) on the template file  \n' The app will not work if you change them.",
+    "Download the template Excel file here",
     buf.getvalue(),
     "Coordinates_template.xlsx",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
