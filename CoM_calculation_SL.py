@@ -120,7 +120,7 @@ def residual_analysis(data_column,time_column):
 
 ## Main script
 
-image = Image.open('C:\\Users\\VENUS3D R\\Documents\\Python_Scripts\\WebApp\\test_image.png')
+image = Image.open('https://github.com/tgonjo/2d_com_app/blob/main/test_image.pngg')
 st.image(image,width=800)
 st.title('CoM & Net Force calculator for A18FB Assessment 1')
 st.caption('This web app was designed to calculate the 2D centre of mass (CoM) location and net force based on 2D coordinates of six joints.')
