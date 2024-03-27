@@ -86,7 +86,7 @@ def residual_analysis(data_column,time_column):
     #Smooth the data using each frequency and calculate RMS
     for j in np.arange(100)+1:
         
-        smooth_data.iloc[:,j-1] = apply_low_pass_filter(data_column, 10, sample_rate)
+        smooth_data.iloc[:,j-1] = apply_low_pass_filter(data_column, freq_int[j], sample_rate)
         
         
         MSdat = smooth_data.iloc[:,j-1] - data_column.reset_index().iloc[:,1]
@@ -218,7 +218,8 @@ if submit2:
 
     for column in df_raw.columns[1:]:
         
-        df[column], df_freq[column][0] = residual_analysis(df_raw[column],df_raw['Time'])
+        #df[column], df_freq[column][0] = residual_analysis(df_raw[column],df_raw['Time'])
+        df[column] = apply_low_pass_filter(df_raw[column], 10, 1/(df_raw['Time'][1]-df_raw['Time'][0]))
 
 
     BSP_M = [['lower_arm',1.62, 45.74],['upper_arm',2.71,57.72],['trunk',43.46,43.10],['thigh',14.16,40.95],['shank',4.33,43.95]]
