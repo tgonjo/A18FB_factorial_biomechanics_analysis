@@ -86,7 +86,7 @@ def residual_analysis(data_column,time_column):
     #Smooth the data using each frequency and calculate RMS
     for j in np.arange(100)+1:
         
-        smooth_data.iloc[:,j-1] = apply_low_pass_filter(data_column, freq_int[j], sample_rate)
+        smooth_data.iloc[:,j-1] = apply_low_pass_filter(data_column, 10, sample_rate)
         
         
         MSdat = smooth_data.iloc[:,j-1] - data_column.reset_index().iloc[:,1]
