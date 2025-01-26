@@ -32,16 +32,18 @@ def fill_data_gaps(data, max_consecutive_gaps=3):
                 
         st.success('Gap check 1: Success! Less than 4 consecutive gaps in your data')
                 
-def check_and_continue():
-    # Check for NaN values in the first and last rows
-    if df_raw.iloc[0].isna().any() or df_raw.iloc[-1].isna().any():
-        
-        st.error('Gap check 2: Error! There are some blank cells in the first or last row of your Excel data')
+def dot_product_angle(df, i, ref_x, ref_y, point1_x, point1_y, point2_x, point2_y):
+    v1_x = df.loc[i,point1_x] - df.loc[i,ref_x]
+    v2_x = df.loc[i,point2_x] - df.loc[i,ref_x]
+    v1_y = df.loc[i,point1_y] - df.loc[i,ref_y]
+    v2_y = df.loc[i,point2_y] - df.loc[i,ref_y]
     
-        st.subheader("Ignore any error messages below. Refresh this page and try again once you have fixed the issue described in 'Gap check 2' above.")                           
-        st.stop()
-    else:
-        st.success('Gap check 2: Success! No blank cells in the first and last data rows')
+    joint_cos = (v1_x*v2_x + v1_y*v2_y)/(math.sqrt(v1_x**2+v1_y**2)*math.sqrt(v2_x**2+v2_y**2))
+    
+    joint_angle = math.acos(joint_cos)
+    joint_angle_degrees = math.degrees(joint_angle)
+    
+    return joint_angle_degrees
         
 def apply_low_pass_filter(data, cutoff_freq, fs):
     # Calculate the filter coefficients
@@ -122,187 +124,138 @@ def residual_analysis(data_column,time_column):
 
 image = Image.open('test_image.png')
 st.image(image,width=800)
-st.title('CoM & Net Force calculator for A18FB Assessment 1')
-st.caption('This web app was designed to calculate the 2D centre of mass (CoM) location and net force based on 2D coordinates of six joints (Ankle, Knee, Hip, Shoulder, Elbow, and Wrist).')
+st.title('Data converter for A18FB Assessment 1')
+st.caption('This web app was designed to convert, smooth, and export data obtained on Factorial Biomechanics.')
 
 st.subheader('What does this web app do?')
-st.text('1. It smoothes your data to minimise the noise in your joint coordinates.')
-st.text('2. Based on the smoothed data, it calculates the CoM coordinates and net force.')
-st.text('3. It exports the output data (smoothed coordinates, CoM coordinates, and net force) as an Excel file.')
+st.text('1. It smoothes your data to minimise the noise in your joint and centre of mass (CoM) coordinates and joint angles.')
+st.text('2. It calculates the net force acting on the body based on the CoM information.')
+st.text('3. It exports selected output data (smoothed coordinates, joint angles, and net force) as an Excel file.')
 
 st.text('')
 st.subheader('Before you start, make sure you have:')
-st.text('1. digitised all six joints and exported the coordinate data;')
-st.text('2. converted the unit if necessary (e.g. cm to m, etc.);')
-st.text('3. created a time column based on your frame rate;')
-st.text('4. checked there are no blank cells in the first and last rows;')
-st.text('5. checked there are no more than 3 consecutive blank cells in each column;')
-st.text('6. pasted your time and coordinate data onto the template Excel file and saved it.')
+st.text('1. calibrated and digitised your video data on the Factorial Biomechanics page;')
+st.text('2. sense-checked your data (e.g. was the calibration data succesfully applied?)')
+st.text('3. downloaded your data as json file (not only video file)')
 
-deleva_url = "https://www.sciencedirect.com/science/article/pii/0021929095001786?via%3Dihub"
 
-template_columns = ['Time', 'WristX', 'WristY', 'ElbowX', 'ElbowY', 'ShoulderX',
-       'ShoulderY', 'HipX', 'HipY', 'KneeX', 'KneeY', 'AnkleX', 'AnkleY']
-
-temp_df=pd.DataFrame(columns=template_columns)
-
-temp_df.to_excel(buf := BytesIO(), index=False)
-
-st.text('')
-st.download_button(
-    "Download the template Excel file here",
-    buf.getvalue(),
-    "Coordinates_template.xlsx",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-)
-st.text('IMPORTANT!!: Do not change the header of each column (e.g. ShoulderX, HipY, etc.) - the app will not work if you change them')
-st.text('')
-
-st.subheader("Input participant's information and upload your Excel file")
+st.subheader("Input participant's information and upload your json file")
 
 with st.form(key='mass_form'):
     
     entered_mass = st.number_input("Participant's body mass (kg).")
            
-    selected_sex = st.radio("Participant's sex", ("Male", "Female", "Prefer not to say"))
-    st.write("The sex information is necessary to select the CoM calculation method proposed by De Leva (1996) [link to the article](%s). If you select 'Prefer not to say', the average of the male and female models will be used for CoM calculation." % deleva_url)
-        
-    submit1 = st.form_submit_button("Confirm participant's mass and sex")
+    submit1 = st.form_submit_button("Confirm participant's mass")
     
     if submit1:
         st.text(f'Body mass: {entered_mass} kg')
-        st.text(f'Sex: {selected_sex}')
+       
         
-uploaded_file = st.file_uploader('Upload your Excel file', type='xlsx', accept_multiple_files=False, key ='xlsx')
+uploaded_file = st.file_uploader('Upload your json file', type='json', accept_multiple_files=False, key ='json')
 
-if selected_sex is None:
-    st.error("Participant's sex is not confirmed")         
-    st.stop()
     
-elif entered_mass == 0:
-    st.error("Input participant's mass and sex (don't forget to click the confirm button)")         
+if entered_mass == 0:
+    st.error("Input participant's mass (don't forget to click the confirm button)")         
     st.stop()
     
 elif uploaded_file is None:
-    st.error('Upload your Excel file')         
+    st.error('Upload your json file')         
     st.stop()
 
-with st.form(key='upload_form'):
 
-    if uploaded_file:
-        df_raw = pd.read_excel(uploaded_file)
-        fig,ax = plt.subplots()
-        ax.plot(df_raw['Time']-df_raw['Time'].iloc[0], df_raw['HipY'])
-        ax.set_title('This is your Hip(Y) time-series plot. Do the time and displacement values look like seconds and metres?')
-        ax.set_xlabel('Time')
-        ax.set_ylabel('Vertical Displacement')
-        st.pyplot(fig)
-        st.text('If either the time or displacement unit seems wrong, go back to your Excel file and fix it')
-        
-            
-        df_freq = pd.DataFrame(columns = df_raw.columns[1:],index=range(1))
-        
-        fill_data_gaps(df_raw, max_consecutive_gaps=3)
-        
-        check_and_continue()
-        
-        st.text("If the two gap check functions are successful and there are no mistakes in the units, click 'Proceed'")
-        
-        submit2 = st.form_submit_button('Proceed (it might take a bit to start processing data - be patient!)')
-        
 progress_placeholder = st.empty()
         
-if submit2:
+if uploaded_file:
     
-    df = df_raw.copy()
+    with open(path + file_name, 'r') as file:
+        data = json.load(file)
 
-    for column in df_raw.columns[1:]:
+    frames = len(data)
+
+    linear_df = pd.DataFrame(index=range(frames), columns=range(69))
+    angular_df = pd.DataFrame(index=range(frames), columns=range(11))
+    fps = 180
+
+    for i in range(frames):
         
-        #df[column], df_freq[column][0] = residual_analysis(df_raw[column],df_raw['Time'])
-        df[column] = apply_low_pass_filter(df_raw[column], 10, 1/(df_raw['Time'][1]-df_raw['Time'][0]))
+        for j in range(len(data[i]['keypoints2D'])):
+            segment = data[i]['keypoints2D'][j]['name']
+            
+            if i == 0:
+                linear_df = linear_df.rename(columns={j*2+1: segment+'_X (m)'})
+                linear_df = linear_df.rename(columns={j*2+2: segment+'_Y (m)'})
+                
+            linear_df.iloc[i,j*2+1] = data[i]['keypoints2D'][j]['realX']
+            linear_df.iloc[i,j*2+2] = data[i]['keypoints2D'][j]['realY']
+            
+        linear_df.iloc[i,67] = data[i]['com2D']['realX']
+        linear_df.iloc[i,68] = data[i]['com2D']['realY']
+        
+        for k,joint in enumerate(data[i]['angles2D']):
+            if i == 0:
+                angular_df = angular_df.rename(columns={k+1: joint})
+        
+        angular_df.loc[i,'rightElbowAngle'] = dot_product_angle(linear_df,i,'right_elbow_X (m)','right_elbow_Y (m)',
+                                            'right_wrist_X (m)','right_wrist_Y (m)','right_shoulder_X (m)','right_shoulder_Y (m)')
+        
+        angular_df.loc[i,'leftElbowAngle'] = dot_product_angle(linear_df,i,'left_elbow_X (m)','left_elbow_Y (m)',
+                                            'left_wrist_X (m)','left_wrist_Y (m)','left_shoulder_X (m)','left_shoulder_Y (m)')
+            
+        angular_df.loc[i,'rightKneeAngle'] = dot_product_angle(linear_df,i,'right_knee_X (m)','right_knee_Y (m)',
+                                            'right_ankle_X (m)','right_ankle_Y (m)','right_hip_X (m)','right_hip_Y (m)')
+        
+        angular_df.loc[i,'leftKneeAngle'] = dot_product_angle(linear_df,i,'left_knee_X (m)','left_knee_Y (m)',
+                                            'left_ankle_X (m)','left_ankle_Y (m)','left_hip_X (m)','left_hip_Y (m)')
+        
+        angular_df.loc[i,'rightShoulderAngle'] = dot_product_angle(linear_df,i,'right_shoulder_X (m)','right_shoulder_Y (m)',
+                                            'right_hip_X (m)','right_hip_Y (m)','right_elbow_X (m)','right_elbow_Y (m)')
+        
+        angular_df.loc[i,'leftShoulderAngle'] = dot_product_angle(linear_df,i,'left_shoulder_X (m)','left_shoulder_Y (m)',
+                                            'left_hip_X (m)','left_hip_Y (m)','left_elbow_X (m)','left_elbow_Y (m)')
+        
+        angular_df.loc[i,'rightHipAngle'] = dot_product_angle(linear_df,i,'right_hip_X (m)','right_hip_Y (m)',
+                                            'right_shoulder_X (m)','right_shoulder_Y (m)','right_knee_X (m)','right_knee_Y (m)')
+        
+        angular_df.loc[i,'leftHipAngle'] = dot_product_angle(linear_df,i,'left_hip_X (m)','left_hip_Y (m)',
+                                            'left_shoulder_X (m)','left_shoulder_Y (m)','left_knee_X (m)','left_knee_Y (m)')
+        
+        angular_df.loc[i,'rightAnkleAngle'] = dot_product_angle(linear_df,i,'right_ankle_X (m)','right_ankle_Y (m)',
+                                            'right_knee_X (m)','right_knee_Y (m)','right_foot_index_X (m)','right_foot_index_Y (m)')
+        
+        angular_df.loc[i,'leftAnkleAngle'] = dot_product_angle(linear_df,i,'left_ankle_X (m)','left_ankle_Y (m)',
+                                            'left_knee_X (m)','left_knee_Y (m)','left_foot_index_X (m)','left_foot_index_Y (m)')
+        
+        
+        if i == 0:       
+            linear_df.iloc[i,0] = 0
+            angular_df.iloc[i,0] = 0
+        else:
+            linear_df.iloc[i,0] = linear_df.iloc[i-1,0]+1/fps
+            angular_df.iloc[i,0] = angular_df.iloc[i-1,0]+1/fps
+            
+    linear_df = linear_df.rename(columns={0: 'Time (s)'})
+    angular_df = angular_df.rename(columns={0: 'Time (s)'})
+    linear_df = linear_df.rename(columns={67: 'CoM_X (m)'})
+    linear_df = linear_df.rename(columns={68: 'CoM_Y (m)'})
 
 
-    BSP_M = [['lower_arm',1.62, 45.74],['upper_arm',2.71,57.72],['trunk',43.46,43.10],['thigh',14.16,40.95],['shank',4.33,43.95]]
+    linear_df.iloc[:,1:] = linear_df.iloc[:,1:]*-1
 
-    BSP_F = [['lower_arm',1.38, 45.59],['upper_arm',2.55,57.54],['trunk',42.57,37.82],['thigh',14.78,36.12],['shank',4.81,43.52]]
+    ref_X = linear_df.iloc[0,61]
+    ref_Y = linear_df.iloc[0,62]
 
-    df_bsp_m = pd.DataFrame(BSP_M, columns=['Segment', 'Percent_mass','CoM_location'])
-    df_bsp_f = pd.DataFrame(BSP_F, columns=['Segment', 'Percent_mass','CoM_location'])
-    df_bsp_m.set_index('Segment', inplace=True)
-    df_bsp_f.set_index('Segment', inplace=True)
+    for col in linear_df.columns:
+        if '_X' in col:
+            linear_df[col] = linear_df[col]-ref_X
+            
+        elif '_Y' in col:
+            linear_df[col] = linear_df[col]-ref_Y
 
-    df_bsp_m = df_bsp_m/100
-    df_bsp_f = df_bsp_f/100
+    linear_df = linear_df.astype(int)
+    angular_df = angular_df.astype(int)
 
-    df_bsp_pns = (df_bsp_m + df_bsp_f)/2
-
-    # df_com = pd.DataFrame(columns =['CoM_X', 'CoM_Y'], index = range(len(df)))
-
-    if selected_sex == 'Male':
-        com_la_x = df['ElbowX']+(df['WristX']-df['ElbowX'])*df_bsp_m.loc['lower_arm']['CoM_location']
-        com_ua_x = df['ShoulderX']+(df['ElbowX']-df['ShoulderX'])*df_bsp_m.loc['upper_arm']['CoM_location']
-        com_trunk_x = df['ShoulderX']+(df['HipX']-df['ShoulderX'])*df_bsp_m.loc['trunk']['CoM_location']
-        com_thigh_x = df['HipX']+(df['KneeX']-df['HipX'])*df_bsp_m.loc['thigh']['CoM_location']
-        com_shank_x = df['KneeX']+(df['AnkleX']-df['KneeX'])*df_bsp_m.loc['shank']['CoM_location']
-        
-        com_la_y = df['ElbowY']+(df['WristY']-df['ElbowY'])*df_bsp_m.loc['lower_arm']['CoM_location']
-        com_ua_y = df['ShoulderY']+(df['ElbowY']-df['ShoulderY'])*df_bsp_m.loc['upper_arm']['CoM_location']
-        com_trunk_y = df['ShoulderY']+(df['HipY']-df['ShoulderY'])*df_bsp_m.loc['trunk']['CoM_location']
-        com_thigh_y = df['HipY']+(df['KneeY']-df['HipY'])*df_bsp_m.loc['thigh']['CoM_location']
-        com_shank_y = df['KneeY']+(df['AnkleY']-df['KneeY'])*df_bsp_m.loc['shank']['CoM_location']
-        
-        com_wb_x = (com_la_x*df_bsp_m['Percent_mass']['lower_arm']+com_ua_x*df_bsp_m['Percent_mass']['upper_arm'] \
-        + com_trunk_x*df_bsp_m['Percent_mass']['trunk']+com_thigh_x*df_bsp_m['Percent_mass']['thigh']+com_shank_x*df_bsp_m['Percent_mass']['shank'])\
-        / df_bsp_m['Percent_mass'].sum()
-        
-        com_wb_y = (com_la_y*df_bsp_m['Percent_mass']['lower_arm']+com_ua_y*df_bsp_m['Percent_mass']['upper_arm'] \
-        + com_trunk_y*df_bsp_m['Percent_mass']['trunk']+com_thigh_y*df_bsp_m['Percent_mass']['thigh']+com_shank_y*df_bsp_m['Percent_mass']['shank'])\
-        / df_bsp_m['Percent_mass'].sum()
-        
-    elif selected_sex == 'Female':
-        com_la_x = df['ElbowX']+(df['WristX']-df['ElbowX'])*df_bsp_f.loc['lower_arm']['CoM_location']
-        com_ua_x = df['ShoulderX']+(df['ElbowX']-df['ShoulderX'])*df_bsp_f.loc['upper_arm']['CoM_location']
-        com_trunk_x = df['ShoulderX']+(df['HipX']-df['ShoulderX'])*df_bsp_f.loc['trunk']['CoM_location']
-        com_thigh_x = df['HipX']+(df['KneeX']-df['HipX'])*df_bsp_f.loc['thigh']['CoM_location']
-        com_shank_x = df['KneeX']+(df['AnkleX']-df['KneeX'])*df_bsp_f.loc['shank']['CoM_location']
-        
-        com_la_y = df['ElbowY']+(df['WristY']-df['ElbowY'])*df_bsp_f.loc['lower_arm']['CoM_location']
-        com_ua_y = df['ShoulderY']+(df['ElbowY']-df['ShoulderY'])*df_bsp_f.loc['upper_arm']['CoM_location']
-        com_trunk_y = df['ShoulderY']+(df['HipY']-df['ShoulderY'])*df_bsp_f.loc['trunk']['CoM_location']
-        com_thigh_y = df['HipY']+(df['KneeY']-df['HipY'])*df_bsp_f.loc['thigh']['CoM_location']
-        com_shank_y = df['KneeY']+(df['AnkleY']-df['KneeY'])*df_bsp_f.loc['shank']['CoM_location']
-        
-        com_wb_x = (com_la_x*df_bsp_f['Percent_mass']['lower_arm']+com_ua_x*df_bsp_f['Percent_mass']['upper_arm'] \
-        + com_trunk_x*df_bsp_f['Percent_mass']['trunk']+com_thigh_x*df_bsp_f['Percent_mass']['thigh']+com_shank_x*df_bsp_f['Percent_mass']['shank'])\
-        / df_bsp_f['Percent_mass'].sum()
-        
-        com_wb_y = (com_la_y*df_bsp_f['Percent_mass']['lower_arm']+com_ua_y*df_bsp_f['Percent_mass']['upper_arm'] \
-        + com_trunk_y*df_bsp_f['Percent_mass']['trunk']+com_thigh_y*df_bsp_f['Percent_mass']['thigh']+com_shank_y*df_bsp_f['Percent_mass']['shank'])\
-        / df_bsp_f['Percent_mass'].sum()
-        
-    else:
-        com_la_x = df['ElbowX']+(df['WristX']-df['ElbowX'])*df_bsp_pns.loc['lower_arm']['CoM_location']
-        com_ua_x = df['ShoulderX']+(df['ElbowX']-df['ShoulderX'])*df_bsp_pns.loc['upper_arm']['CoM_location']
-        com_trunk_x = df['ShoulderX']+(df['HipX']-df['ShoulderX'])*df_bsp_pns.loc['trunk']['CoM_location']
-        com_thigh_x = df['HipX']+(df['KneeX']-df['HipX'])*df_bsp_pns.loc['thigh']['CoM_location']
-        com_shank_x = df['KneeX']+(df['AnkleX']-df['KneeX'])*df_bsp_pns.loc['shank']['CoM_location']
-        
-        com_la_y = df['ElbowY']+(df['WristY']-df['ElbowY'])*df_bsp_pns.loc['lower_arm']['CoM_location']
-        com_ua_y = df['ShoulderY']+(df['ElbowY']-df['ShoulderY'])*df_bsp_pns.loc['upper_arm']['CoM_location']
-        com_trunk_y = df['ShoulderY']+(df['HipY']-df['ShoulderY'])*df_bsp_pns.loc['trunk']['CoM_location']
-        com_thigh_y = df['HipY']+(df['KneeY']-df['HipY'])*df_bsp_pns.loc['thigh']['CoM_location']
-        com_shank_y = df['KneeY']+(df['AnkleY']-df['KneeY'])*df_bsp_pns.loc['shank']['CoM_location']
-        
-        com_wb_x = (com_la_x*df_bsp_pns['Percent_mass']['lower_arm']+com_ua_x*df_bsp_pns['Percent_mass']['upper_arm'] \
-        + com_trunk_x*df_bsp_pns['Percent_mass']['trunk']+com_thigh_x*df_bsp_pns['Percent_mass']['thigh']+com_shank_x*df_bsp_pns['Percent_mass']['shank'])\
-        / df_bsp_pns['Percent_mass'].sum()
-        
-        com_wb_y = (com_la_y*df_bsp_pns['Percent_mass']['lower_arm']+com_ua_y*df_bsp_pns['Percent_mass']['upper_arm'] \
-        + com_trunk_y*df_bsp_pns['Percent_mass']['trunk']+com_thigh_y*df_bsp_pns['Percent_mass']['thigh']+com_shank_y*df_bsp_pns['Percent_mass']['shank'])\
-        / df_bsp_pns['Percent_mass'].sum()
-
-    df['CoM_X'] = com_wb_x
-    df['CoM_Y'] = com_wb_y
+    com_wb_x = linear_df['CoM_X (m)']
+    com_wb_y = linear_df['CoM_Y (m)']
 
     com_wb_x_v = com_wb_x.copy()
     com_wb_y_v = com_wb_y.copy()
@@ -311,8 +264,8 @@ if submit2:
     
     for i in range(len(com_wb_x)-2):
         
-        com_wb_x_v.iloc[i+1] = (com_wb_x.iloc[i+2]-com_wb_x.iloc[i])/(df['Time'].iloc[i+2]-df['Time'].iloc[i])
-        com_wb_y_v.iloc[i+1] = (com_wb_y.iloc[i+2]-com_wb_y.iloc[i])/(df['Time'].iloc[i+2]-df['Time'].iloc[i])
+        com_wb_x_v.iloc[i+1] = (com_wb_x.iloc[i+2]-com_wb_x.iloc[i])/(linear_df['Time'].iloc[i+2]-linear_df['Time'].iloc[i])
+        com_wb_y_v.iloc[i+1] = (com_wb_y.iloc[i+2]-com_wb_y.iloc[i])/(linear_df['Time'].iloc[i+2]-linear_df['Time'].iloc[i])
 
     com_wb_x_v.iloc[0] = (com_wb_x_v.iloc[1] + com_wb_x_v.iloc[2])-com_wb_x_v.iloc[3]
     com_wb_x_v.iloc[-1] = (com_wb_x_v.iloc[-2] + com_wb_x_v.iloc[-3])-com_wb_x_v.iloc[-4]
@@ -323,8 +276,8 @@ if submit2:
 
     for i in range(len(com_wb_x)-2):
         
-        com_wb_x_a.iloc[i+1] = (com_wb_x_v.iloc[i+2]-com_wb_x_v.iloc[i])/(df['Time'].iloc[i+2]-df['Time'].iloc[i])
-        com_wb_y_a.iloc[i+1] = (com_wb_y_v.iloc[i+2]-com_wb_y_v.iloc[i])/(df['Time'].iloc[i+2]-df['Time'].iloc[i])
+        com_wb_x_a.iloc[i+1] = (com_wb_x_v.iloc[i+2]-com_wb_x_v.iloc[i])/(linear_df['Time'].iloc[i+2]-linear_df['Time'].iloc[i])
+        com_wb_y_a.iloc[i+1] = (com_wb_y_v.iloc[i+2]-com_wb_y_v.iloc[i])/(linear_df['Time'].iloc[i+2]-linear_df['Time'].iloc[i])
 
     com_wb_x_a.iloc[0] = (com_wb_x_a.iloc[1] + com_wb_x_a.iloc[2])-com_wb_x_a.iloc[3]
     com_wb_x_a.iloc[-1] = (com_wb_x_a.iloc[-2] + com_wb_x_a.iloc[-3])-com_wb_x_a.iloc[-4]
@@ -335,21 +288,21 @@ if submit2:
     net_force_x = com_wb_x_a*entered_mass
     net_force_y = com_wb_y_a*entered_mass
 
-    df[' '] = pd.Series([None] * len(net_force_x ))
-    df['Net_Force_X'] = net_force_x
-    df['Net_Force_Y'] = net_force_y
+    linear_df[' '] = pd.Series([None] * len(net_force_x ))
+    linear_df['Net_Force_X'] = net_force_x
+    linear_df['Net_Force_Y'] = net_force_y
             
     progress_placeholder.write("Processing data...")
     # Your existing code for data processing and calculations
     
-    df_len = len(df)
+    df_len = len(linear_df)
 
     df_int = math.floor(df_len/9)
 
     fig2, axs = plt.subplots(1, 10, figsize=(15, 3))
 
-    X = df[['WristX','ElbowX','ShoulderX','HipX','KneeX','AnkleX']]
-    Y = df[['WristY','ElbowY','ShoulderY','HipY','KneeY','AnkleY']]
+    X = linear_df[['WristX','ElbowX','ShoulderX','HipX','KneeX','AnkleX']]
+    Y = linear_df[['WristY','ElbowY','ShoulderY','HipY','KneeY','AnkleY']]
 
 
     xmin = (X.min()-0.5).min()
@@ -366,8 +319,8 @@ if submit2:
         axs[num].set_title(f'Frame {i}')
         axs[num].set_xticks([])
         
-        CM_x = df['CoM_X'].iloc[i] 
-        CM_y = df['CoM_Y'].iloc[i] 
+        CM_x = linear_df['CoM_X'].iloc[i] 
+        CM_y = linear_df['CoM_Y'].iloc[i] 
         
         axs[num].scatter(CM_x, CM_y, color='red', marker='o')
         
@@ -380,7 +333,7 @@ if submit2:
     st.pyplot(fig2)
     st.text('Stick figures of the processed jump movement (the red dots show the location of CoM)')
 
-    df.to_excel(buf := BytesIO(), index=False)
+    linear_df.to_excel(buf := BytesIO(), index=False)
     
     # Display the download button after processing is complete
     st.success("Processing complete!")
