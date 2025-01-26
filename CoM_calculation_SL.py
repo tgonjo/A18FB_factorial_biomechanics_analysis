@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 import math
 from sklearn.linear_model import LinearRegression
 from io import BytesIO
+import json
 
 
 ## Functions ##
