@@ -144,11 +144,13 @@ st.subheader("Input participant's information and upload your json file")
 
 with st.form(key='mass_form'):
     
+    entered_fps = st.number_input("Frame rate of your video data (frames per second).")
     entered_mass = st.number_input("Participant's body mass (kg).")
            
-    submit1 = st.form_submit_button("Confirm participant's mass")
+    submit1 = st.form_submit_button("Confirm the frame rate and participant's mass")
     
     if submit1:
+        st.text(f'Frame Rate: {entered_fps} frames per second')
         st.text(f'Body mass: {entered_mass} kg')
        
         
@@ -175,7 +177,7 @@ if uploaded_file:
 
     linear_df = pd.DataFrame(index=range(frames), columns=range(69))
     angular_df = pd.DataFrame(index=range(frames), columns=range(11))
-    fps = 180
+    fps = entered_fps
 
     for i in range(frames):
         
@@ -298,38 +300,67 @@ if uploaded_file:
     
     df_len = len(linear_df)
 
-    df_int = math.floor(df_len/9)
+    df_int = math.floor(df_len/11)
 
-    fig2, axs = plt.subplots(1, 10, figsize=(15, 3))
+    fig2, axs = plt.subplots(3, 4, figsize=(15, 3))
 
-    X = linear_df[['WristX','ElbowX','ShoulderX','HipX','KneeX','AnkleX']]
-    Y = linear_df[['WristY','ElbowY','ShoulderY','HipY','KneeY','AnkleY']]
+    LX = linear_df[['left_index_X (m)','left_wrist_X (m)','left_elbow_X (m)','left_shoulder_X (m)','left_hip_X (m)','left_knee_X (m)','left_ankle_X (m)','left_heel_X (m)','left_foot_index_X (m)']]
+    LY = linear_df[['left_index_Y (m)','left_wrist_Y (m)','left_elbow_Y (m)','left_shoulder_Y (m)','left_hip_Y (m)','left_knee_Y (m)','left_ankle_Y (m)','left_heel_Y (m)','left_foot_index_Y (m)']]
 
+    RX = linear_df[['right_index_X (m)','right_wrist_X (m)','right_elbow_X (m)','right_shoulder_X (m)','right_hip_X (m)','right_knee_X (m)','right_ankle_X (m)','right_heel_X (m)','right_foot_index_X (m)']]
+    RY = linear_df[['right_index_Y (m)','right_wrist_Y (m)','right_elbow_Y (m)','right_shoulder_Y (m)','right_hip_Y (m)','right_knee_Y (m)','right_ankle_Y (m)','right_heel_Y (m)','right_foot_index_Y (m)']]
 
-    xmin = (X.min()-0.5).min()
-    xmax = (X.max()+0.5).max()
+    ShoulderX = linear_df[['right_shoulder_X (m)','left_shoulder_X (m)']]
+    ShoulderY = linear_df[['right_shoulder_Y (m)','left_shoulder_Y (m)']]
 
-    ymin = (Y.min()-0.05).min()
-    ymax = (Y.max()+0.1).max()
+    HipX = linear_df[['right_hip_X (m)','left_hip_X (m)']]
+    HipY = linear_df[['right_hip_Y (m)','left_hip_Y (m)']]
+
+    xmin = (LX.min()-0.5).min()
+    xmax = (LX.max()+0.5).max()
+
+    ymin = (LY.min()-0.05).min()
+    ymax = (LY.max()+0.1).max()
 
     for num, i in enumerate(range(0, df_len,df_int)):
-        
-        axs[num].plot(X.iloc[i],Y.iloc[i])
-        axs[num].set_xlim(left=xmin, right=xmax)
-        axs[num].set_ylim(bottom=ymin, top=ymax)
-        axs[num].set_title(f'Frame {i}')
-        axs[num].set_xticks([])
+        if 0 <= num <= 3:
+            fig_row = 0
+            fig_col = num
+
+        elif 4 <= num <= 7:
+            fig_row = 1
+            fig_col = num-4
+
+        elif 8 <= num <= 11:
+            fig_row = 2
+            fig_col = num-8
+
+
+        fig_time = linear_df.iloc[i,0]
+
+        axs[fig_row, fig_col].plot(LX.iloc[i],LY.iloc[i])
+        axs[fig_row, fig_col].plot(RX.iloc[i],RY.iloc[i])
+        axs[fig_row, fig_col].plot(ShoulderX.iloc[i],ShoulderY.iloc[i])
+        axs[fig_row, fig_col].plot(HipX.iloc[i],HipY.iloc[i])
+
+        axs[fig_row, fig_col].set_xlim(left=xmin, right=xmax)
+        axs[fig_row, fig_col].set_ylim(bottom=ymin, top=ymax)
+        axs[fig_row, fig_col].set_title(f'Time: {fig_time} s')
+        axs[fig_row, fig_col].set_xticks([])
         
         CM_x = linear_df['CoM_X'].iloc[i] 
         CM_y = linear_df['CoM_Y'].iloc[i] 
-        
-        axs[num].scatter(CM_x, CM_y, color='red', marker='o')
-        
-        if i>0:
-            axs[num].set_yticks([])
 
-        if i ==0:
-            axs[num].set_ylabel('Y Displacement (m)')
+        Head_x = (linear_df.loc[i,'left_ear_X (m)']+linear_df.loc[i,'right_ear_X (m)'])/2
+        Head_y = (linear_df.loc[i,'left_ear_Y (m)']+linear_df.loc[i,'right_ear_Y (m)'])/2
+        
+        axs[fig_row, fig_col].scatter(CM_x, CM_y, color='red', marker='o')
+        axs[fig_row, fig_col].scatter(Head_x, Head_y, marker='o', s=100)
+        
+        if i ==0 | i ==4 | i==8:
+            axs[fig_row, fig_col].set_ylabel('Y Displacement (m)')
+        else:
+            axs[fig_row, fig_col].set_yticks([])
         
     st.pyplot(fig2)
     st.text('Stick figures of the processed jump movement (the red dots show the location of CoM)')
@@ -342,10 +373,10 @@ if uploaded_file:
     st.download_button(
         "Download your output file",
         buf.getvalue(),
-        "outdat_with_com_nf.xlsx",
+        "outdat_data.xlsx",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    st.text('If not, check and fix your Excel file, reload this page, and run the analysis again')
+    st.text('If not, check and fix your tracking file on Factorial Biomechanics, and run the analysis again')
     
     progress_placeholder.empty()
         
