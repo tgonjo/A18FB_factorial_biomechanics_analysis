@@ -6,7 +6,7 @@ from scipy.signal import butter, filtfilt
 import math
 from io import BytesIO
 import json
-import cv2
+from moviepy.editor import VideoFileClip
 import tempfile
 
 
@@ -138,15 +138,12 @@ if uploaded_file:
             temp_file.write(uploaded_video.read())
             temp_video_path = temp_file.name
 
-    # Use OpenCV to read the video file
-    video = cv2.VideoCapture(temp_video_path)
+    # Use moviepy to get the total number of frames
+    video_clip = VideoFileClip(temp_video_path)
 
-    if not video.isOpened():
-        st.error("Error: Could not open the uploaded video.")
-    else:
-        # Get the total number of frames
-        total_frames = int(video.get(cv2.CAP_PROP_FRAME_COUNT))
-        st.success(f"Total number of frames in the video: {total_frames}")
+    # Get the total number of frames
+    total_frames = int(video_clip.fps * video_clip.duration)
+    st.success(f"Total number of frames in the video: {total_frames}")
  
     frames = len(data)
 
