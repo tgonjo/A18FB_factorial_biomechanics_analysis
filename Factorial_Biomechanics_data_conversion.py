@@ -154,12 +154,14 @@ if uploaded_file:
     fps = entered_fps/diff
     st.markdown(
     f"""
-    <p style="font-size:20px; color: green; font-weight: bold; background-color: #e6ffe6; padding: 10px; border-radius: 5px;">
-        ✅ Sampling frequency of the output data: {round(fps,2)} Hz ({round(fps,2)} fps)
-    </p>
-    <p style="font-size:14px; color: red; font-weight: bold; font-style: italic; background-color: #e6ffe6; padding: 10px; border-radius: 5px;">
-        Note down this information and report it in your method section)
-    </p>
+    <div style="background-color: #e6ffe6; padding: 10px; border-radius: 5px;">
+        <p style="font-size:20px; color: green; font-weight: bold; margin: 0;">
+            ✅ Sampling frequency of the output data: {round(fps,2)} Hz ({round(fps,2)} fps)
+        </p>
+        <p style="font-size:14px; color: red; font-style: italic; margin: 0;">
+            (Note down this information and report it in your method section)
+        </p>
+    </div>
     """,
     unsafe_allow_html=True
 )
