@@ -158,8 +158,8 @@ if uploaded_file:
         <p style="font-size:20px; color: green; font-weight: bold; margin: 0;">
             ✅ Sampling frequency of the output data: {round(fps,2)} Hz ({round(fps,2)} fps)
         </p>
-        <p style="font-size:14px; color: red; font-style: italic; margin: 0;">
-            (Note down this information and report it in your method section)
+        <p style="font-size:14px; color: red; font-weight: bold; font-style: italic; margin: 0;">
+                  (Note down this information and report it in your method section)
         </p>
     </div>
     """,
