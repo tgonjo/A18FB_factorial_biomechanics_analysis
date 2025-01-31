@@ -57,18 +57,6 @@ def apply_low_pass_filter(data, cutoff_freq, fs):
     
     return filtered_data
 
-st.markdown(
-    """
-    <style>
-    .big-font {
-        font-size: 24px !important;
-        font-weight: bold;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 
 ## Main script
 
