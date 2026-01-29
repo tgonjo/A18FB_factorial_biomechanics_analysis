@@ -178,8 +178,8 @@ if uploaded_file:
                                             'left_knee_X (m)','left_knee_Y (m)','left_foot_index_X (m)','left_foot_index_Y (m)')
         
         
-        linear_df_raw.iloc[i,0] = data[i][f'{timestamp[i]}']["originalStamp"]]
-        angular_df_raw.iloc[i,0] = data[i][f'{timestamp[i]}']["originalStamp"]]
+        linear_df_raw.iloc[i,0] = data[i][f'{timestamp[i]}']["originalStamp"]
+        angular_df_raw.iloc[i,0] = data[i][f'{timestamp[i]}']["originalStamp"]
             
     linear_df_raw = linear_df_raw.rename(columns={0: 'Time (s)'})
     angular_df_raw = angular_df_raw.rename(columns={0: 'Time (s)'})
