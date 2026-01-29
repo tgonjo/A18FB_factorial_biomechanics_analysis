@@ -113,7 +113,7 @@ if uploaded_file:
         
     data = json.loads(raw_data.decode("utf-8"))
 
- 
+    times = []  
     frames = len(data)
 
     linear_df_raw = pd.DataFrame(index=range(frames), columns=range(69))
@@ -127,7 +127,6 @@ if uploaded_file:
             if isinstance(data[j], dict):
                 frame_key = sorted(data[j].keys(), key=lambda s: float(s))
                 timestamp = frame_key[0]
-                frames.append(data[i])
                 times.append(data[j][f'{timestamp}'].get("originalStamp", float(f'{timestamp}')))
 
                 
