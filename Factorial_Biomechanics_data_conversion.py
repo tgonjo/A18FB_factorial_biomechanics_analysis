@@ -121,28 +121,26 @@ if uploaded_file:
 
  
     for i in range(frames):
+            
+        frame_key = sorted(data[i].keys(), key=lambda s: float(s))
+        timestamp = frame_key[0]
+        times.append(data[i][f'{timestamp}'].get("originalStamp", float(f'{timestamp}')))
         
-        for j in range(len(data[i])):
-
-            if isinstance(data[j], dict):
-                frame_key = sorted(data[j].keys(), key=lambda s: float(s))
-                timestamp = frame_key[0]
-                times.append(data[j][f'{timestamp}'].get("originalStamp", float(f'{timestamp}')))
-
+        for j in range(len(data[i][f'{timestamp}']['keypoints2D'])):
                 
-            segment = data[i][f'{timestamp[i]}']['keypoints2D'][j]['name']
+            segment = data[i][f'{timestamp}']['keypoints2D'][j]['name']
             
             if i == 0:
                 linear_df_raw = linear_df_raw.rename(columns={j*2+1: segment+'_X (m)'})
                 linear_df_raw = linear_df_raw.rename(columns={j*2+2: segment+'_Y (m)'})
                 
-            linear_df_raw.iloc[i,j*2+1] = data[i][f'{timestamp[i]}']['keypoints2D'][j]['realX']
-            linear_df_raw.iloc[i,j*2+2] = data[i][f'{timestamp[i]}']['keypoints2D'][j]['realY']
+            linear_df_raw.iloc[i,j*2+1] = data[i][f'{timestamp}']['keypoints2D'][j]['realX']
+            linear_df_raw.iloc[i,j*2+2] = data[i][f'{timestamp}']['keypoints2D'][j]['realY']
             
-        linear_df_raw.iloc[i,67] = data[i][f'{timestamp[i]}']['com2D']['realX']
-        linear_df_raw.iloc[i,68] = data[i][f'{timestamp[i]}']['com2D']['realY']
+        linear_df_raw.iloc[i,67] = data[i][f'{timestamp}']['com2D']['realX']
+        linear_df_raw.iloc[i,68] = data[i][f'{timestamp}']['com2D']['realY']
         
-        for k,joint in enumerate(data[i][f'{timestamp[i]}']['angles2D']):
+        for k,joint in enumerate(data[i][f'{timestamp}']['angles2D']):
             if i == 0:
                 angular_df_raw = angular_df_raw.rename(columns={k+1: joint})
         
@@ -177,8 +175,8 @@ if uploaded_file:
                                             'left_knee_X (m)','left_knee_Y (m)','left_foot_index_X (m)','left_foot_index_Y (m)')
         
         
-        linear_df_raw.iloc[i,0] = data[i][f'{timestamp[i]}']["originalStamp"]
-        angular_df_raw.iloc[i,0] = data[i][f'{timestamp[i]}']["originalStamp"]
+        linear_df_raw.iloc[i,0] = data[i][f'{timestamp}']["originalStamp"]
+        angular_df_raw.iloc[i,0] = data[i][f'{timestamp}']["originalStamp"]
             
     linear_df_raw = linear_df_raw.rename(columns={0: 'Time (s)'})
     angular_df_raw = angular_df_raw.rename(columns={0: 'Time (s)'})
