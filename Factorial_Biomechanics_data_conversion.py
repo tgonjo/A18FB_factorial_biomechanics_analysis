@@ -114,7 +114,7 @@ if uploaded_file:
     data = json.loads(raw_data.decode("utf-8"))
 
     times = []  
-    frames = len(data)
+    frames = len(data)-1
 
     linear_df_raw = pd.DataFrame(index=range(frames), columns=range(69))
     angular_df_raw = pd.DataFrame(index=range(frames), columns=range(11))
