@@ -135,7 +135,7 @@ if uploaded_file:
                 linear_df_raw = linear_df_raw.rename(columns={j*2+2: segment+'_Y (m)'})
 
                 if j ==0:
-                scale = data[i][f'{timestamp}']['keypoints2D'][0]['x'] / data[i][f'{timestamp}']['keypoints2D'][0]['realX']
+                        scale = data[i][f'{timestamp}']['keypoints2D'][0]['x'] / data[i][f'{timestamp}']['keypoints2D'][0]['realX']
                 
             linear_df_raw.iloc[i,j*2+1] = data[i][f'{timestamp}']['keypoints2D'][j]['x']/scale
             linear_df_raw.iloc[i,j*2+2] = data[i][f'{timestamp}']['keypoints2D'][j]['y']/scale
