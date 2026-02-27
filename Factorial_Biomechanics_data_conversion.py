@@ -133,12 +133,16 @@ if uploaded_file:
             if i == 0:
                 linear_df_raw = linear_df_raw.rename(columns={j*2+1: segment+'_X (m)'})
                 linear_df_raw = linear_df_raw.rename(columns={j*2+2: segment+'_Y (m)'})
+
+                if j ==0:
+                scale = data[i][f'{timestamp}']['keypoints2D'][0]['x'] / data[i][f'{timestamp}']['keypoints2D'][0]['realX']
                 
-            linear_df_raw.iloc[i,j*2+1] = data[i][f'{timestamp}']['keypoints2D'][j]['realX']
-            linear_df_raw.iloc[i,j*2+2] = data[i][f'{timestamp}']['keypoints2D'][j]['realY']
+            linear_df_raw.iloc[i,j*2+1] = data[i][f'{timestamp}']['keypoints2D'][j]['x']/scale
+            linear_df_raw.iloc[i,j*2+2] = data[i][f'{timestamp}']['keypoints2D'][j]['y']/scale
+
             
-        linear_df_raw.iloc[i,67] = data[i][f'{timestamp}']['com2D']['realX']
-        linear_df_raw.iloc[i,68] = data[i][f'{timestamp}']['com2D']['realY']
+        linear_df_raw.iloc[i,67] = data[i][f'{timestamp}']['com2D']['x']/scale
+        linear_df_raw.iloc[i,68] = data[i][f'{timestamp}']['com2D']['y']/scale
         
         for k,joint in enumerate(data[i][f'{timestamp}']['angles2D']):
             if i == 0:
