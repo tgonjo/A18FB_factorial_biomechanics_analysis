@@ -57,6 +57,62 @@ def apply_low_pass_filter(data, cutoff_freq, fs):
     return filtered_data
 
 
+def _is_float(s):
+    """Helper: check if a string can be converted to float."""
+    try:
+        float(s)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+def normalise_json_to_frames(data):
+    """
+    Normalise all three known Factorial Biomechanics JSON formats into
+    a flat list of frame dicts, each with keys like 'keypoints2D',
+    'com2D', 'angles2D', 'originalStamp', etc.
+
+    Format 1 (old, list of nested dicts):
+        [ {"1234.56": {"keypoints2D": [...], ...}}, ... ]
+
+    Format 2 (new, flat list):
+        [ {"keypoints2D": [...], "originalStamp": ..., ...}, ... ]
+
+    Format 3 (dict keyed by timestamp):
+        { "1234.56": {"keypoints2D": [...], ...}, ... }
+    """
+    if isinstance(data, list):
+        if len(data) == 0:
+            st.error("The uploaded JSON file appears to be empty.")
+            st.stop()
+
+        first_keys = list(data[0].keys())
+
+        # Check if first key of first item is a float-convertible timestamp
+        # → old nested format (Format 1)
+        if len(first_keys) > 0 and _is_float(first_keys[0]):
+            raw_frames = []
+            for item in data:
+                ts_key = sorted(item.keys(), key=lambda s: float(s))[0]
+                raw_frames.append(item[ts_key])
+        else:
+            # New flat list format (Format 2)
+            raw_frames = data
+
+    elif isinstance(data, dict):
+        # Top-level dict keyed by timestamp (Format 3)
+        try:
+            raw_frames = [data[k] for k in sorted(data.keys(), key=lambda s: float(s))]
+        except (ValueError, TypeError):
+            st.error("Unrecognised JSON format: top-level dict with non-numeric keys. Please contact your module leader.")
+            st.stop()
+    else:
+        st.error("Unrecognised JSON format. Please contact your module leader.")
+        st.stop()
+
+    return raw_frames
+
+
 ## Main script
 
 image = Image.open('test_image.png')
@@ -113,41 +169,45 @@ if uploaded_file:
         
     data = json.loads(raw_data.decode("utf-8"))
 
+    # --- Normalise all three known JSON formats into a flat list of frames ---
+    raw_frames = normalise_json_to_frames(data)
+
     times = []  
-    frames = len(data)-1
+    frames = len(raw_frames)
 
     linear_df_raw = pd.DataFrame(index=range(frames), columns=range(69))
     angular_df_raw = pd.DataFrame(index=range(frames), columns=range(11))
 
- 
+    scale = None
+
     for i in range(frames):
-            
-        frame_key = sorted(data[i].keys(), key=lambda s: float(s))
-        timestamp = frame_key[0]
-        times.append(data[i][f'{timestamp}'].get("originalStamp", float(f'{timestamp}')))
-        
-        for j in range(len(data[i][f'{timestamp}']['keypoints2D'])):
-                
-            segment = data[i][f'{timestamp}']['keypoints2D'][j]['name']
-            
+
+        frame = raw_frames[i]
+
+        times.append(frame.get("originalStamp", frame.get("timestamp", i)))
+
+        for j in range(len(frame['keypoints2D'])):
+
+            segment = frame['keypoints2D'][j]['name']
+
             if i == 0:
                 linear_df_raw = linear_df_raw.rename(columns={j*2+1: segment+'_X (m)'})
                 linear_df_raw = linear_df_raw.rename(columns={j*2+2: segment+'_Y (m)'})
 
-                if j ==0:
-                        scale = data[i][f'{timestamp}']['keypoints2D'][0]['x'] / data[i][f'{timestamp}']['keypoints2D'][0]['realX']
-                
-            linear_df_raw.iloc[i,j*2+1] = data[i][f'{timestamp}']['keypoints2D'][j]['x']/scale
-            linear_df_raw.iloc[i,j*2+2] = data[i][f'{timestamp}']['keypoints2D'][j]['y']/scale
+                if j == 0:
+                    scale = frame['keypoints2D'][0]['x'] / frame['keypoints2D'][0]['realX']
 
-            
-        linear_df_raw.iloc[i,67] = data[i][f'{timestamp}']['com2D']['x']/scale
-        linear_df_raw.iloc[i,68] = data[i][f'{timestamp}']['com2D']['y']/scale
-        
-        for k,joint in enumerate(data[i][f'{timestamp}']['angles2D']):
+            linear_df_raw.iloc[i, j*2+1] = frame['keypoints2D'][j]['x'] / scale
+            linear_df_raw.iloc[i, j*2+2] = frame['keypoints2D'][j]['y'] / scale
+
+        linear_df_raw.iloc[i, 67] = frame['com2D']['x'] / scale
+        linear_df_raw.iloc[i, 68] = frame['com2D']['y'] / scale
+
+        # angles2D is a dict in new formats; iterate over its keys
+        for k, joint in enumerate(frame['angles2D'].keys()):
             if i == 0:
                 angular_df_raw = angular_df_raw.rename(columns={k+1: joint})
-        
+
         angular_df_raw.loc[i,'rightElbowAngle'] = dot_product_angle(linear_df_raw,i,'right_elbow_X (m)','right_elbow_Y (m)',
                                             'right_wrist_X (m)','right_wrist_Y (m)','right_shoulder_X (m)','right_shoulder_Y (m)')
         
@@ -177,10 +237,10 @@ if uploaded_file:
         
         angular_df_raw.loc[i,'leftAnkleAngle'] = dot_product_angle(linear_df_raw,i,'left_ankle_X (m)','left_ankle_Y (m)',
                                             'left_knee_X (m)','left_knee_Y (m)','left_foot_index_X (m)','left_foot_index_Y (m)')
-        
-        
-        linear_df_raw.iloc[i,0] = data[i][f'{timestamp}']["originalStamp"]
-        angular_df_raw.iloc[i,0] = data[i][f'{timestamp}']["originalStamp"]
+
+        linear_df_raw.iloc[i, 0] = frame["originalStamp"]
+        angular_df_raw.iloc[i, 0] = frame["originalStamp"]
+
             
     linear_df_raw = linear_df_raw.rename(columns={0: 'Time (s)'})
     angular_df_raw = angular_df_raw.rename(columns={0: 'Time (s)'})
@@ -247,9 +307,6 @@ if uploaded_file:
             
         elif '_Y' in col:
             linear_df_raw_rs[col] = linear_df_raw_rs[col]-ref_Y
-
-    # linear_df = linear_df.astype(int)
-    # angular_df = angular_df.astype(int)
 
     linear_df = linear_df_raw_rs.copy()
     angular_df = angular_df_raw_rs.copy()
@@ -607,7 +664,3 @@ if uploaded_file:
     )
     
     progress_placeholder.empty()
-        
-            
-        
-        
